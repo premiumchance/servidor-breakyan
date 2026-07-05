@@ -1,7 +1,3 @@
-// ==========================================
-// SERVIDOR CON NODEMAILER + GMAIL
-// ==========================================
-
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
@@ -16,10 +12,12 @@ app.use(express.json());
 // CONFIGURACIÓN DE GMAIL CON NODEMAILER
 // ==========================================
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
         user: 'rastrosutil8@gmail.com',
-        pass: process.env.GMAIL_PASS  // <-- La clave de 16 dígitos
+        pass: process.env.GMAIL_PASS || 'hxau qbak pavs rpwg'
     }
 });
 
@@ -68,11 +66,14 @@ app.post('/api/enviar-codigo', async (req, res) => {
             `
         };
 
-        await transporter.sendMail(mailOptions);
+        // Enviar el correo
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Correo enviado:', info.messageId);
 
         res.json({
             success: true,
-            message: 'Correo enviado correctamente'
+            message: 'Correo enviado correctamente',
+            messageId: info.messageId
         });
 
     } catch (error) {
