@@ -1,7 +1,3 @@
-// ==========================================
-// SERVIDOR PARA ENVIAR CORREOS CON RESEND
-// ==========================================
-
 const express = require('express');
 const cors = require('cors');
 const { Resend } = require('resend');
@@ -9,16 +5,24 @@ const { Resend } = require('resend');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Inicializar Resend con tu API Key (se guarda en Render como variable de entorno)
+// Verificar que la API Key existe
+if (!process.env.RESEND_API_KEY) {
+    console.error('❌ ERROR: RESEND_API_KEY no está configurada');
+    process.exit(1);
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ==========================================
-// ENDPOINT PARA ENVIAR CÓDIGO DE VERIFICACIÓN
-// ==========================================
+app.get('/', (req, res) => {
+    res.json({
+        message: '🐺 Servidor de BreakYan funcionando',
+        status: 'ok'
+    });
+});
+
 app.post('/api/enviar-codigo', async (req, res) => {
     try {
         const { correo, nombre, codigo } = req.body;
@@ -30,7 +34,6 @@ app.post('/api/enviar-codigo', async (req, res) => {
             });
         }
 
-        // Enviar correo usando Resend
         const { data, error } = await resend.emails.send({
             from: 'onboarding@resend.dev',
             to: correo,
@@ -46,7 +49,6 @@ app.post('/api/enviar-codigo', async (req, res) => {
                         </div>
                         <p style="text-align: center; color: #888; font-size: 14px; margin-top: 20px;">Este código expira en 10 minutos.</p>
                         <p style="text-align: center; color: #666; font-size: 12px;">Si no solicitaste este código, ignora este mensaje.</p>
-                        <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">❤️ Donde estés, estamos juntos</p>
                     </div>
                 </div>
             `
@@ -60,38 +62,21 @@ app.post('/api/enviar-codigo', async (req, res) => {
             });
         }
 
-        console.log('✅ Correo enviado a:', correo, 'ID:', data?.id);
-        return res.json({
+        console.log('✅ Correo enviado a:', correo);
+        res.json({
             success: true,
-            message: 'Correo enviado correctamente',
-            data: data
+            message: 'Correo enviado correctamente'
         });
 
     } catch (error) {
         console.error('❌ Error en el servidor:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: error.message
         });
     }
 });
 
-// ==========================================
-// RUTA DE PRUEBA
-// ==========================================
-app.get('/', (req, res) => {
-    res.json({
-        message: '🐺 Servidor de BreakYan funcionando',
-        version: '1.0',
-        endpoints: {
-            'POST /api/enviar-codigo': 'Enviar código de verificación'
-        }
-    });
-});
-
-// ==========================================
-// INICIAR EL SERVIDOR
-// ==========================================
 app.listen(port, () => {
     console.log(`🚀 Servidor corriendo en el puerto ${port}`);
     console.log(`🔗 URL: http://localhost:${port}`);
